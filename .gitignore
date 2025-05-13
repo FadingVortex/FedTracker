@@ -2,6 +2,8 @@
 /data/cifar100
 /data/mnist
 /result
+/result-bak
 /attack
+*.pyc
 *.log
 *.out
