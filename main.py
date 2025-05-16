@@ -31,7 +31,7 @@ if __name__ == '__main__':
         json.dump(args.__dict__, f, indent=2)
     # 设置使用的设备：GPU 或 CPU
     args.device = torch.device('cuda:{}'.format(args.gpu) if torch.cuda.is_available() and args.gpu != -1 else 'cpu')
-
+    print("cuda is available? {}".format(torch.cuda.is_available()))
     # 加载完整数据集（训练集和测试集）
     train_dataset, test_dataset = get_full_dataset(args.dataset, img_size=(args.image_size, args.image_size))
     # 创建客户端

@@ -20,10 +20,58 @@ class Args:
         self.test_bs = 512
         self.gpu = 0
 
+# test one pattern-label pair
+def test_one_pattern():
+    path = "../result/VGG16-fast/"
+    model_path = os.path.join(path, "model_last_epochs_75.pth")
+    from utils.models import VGG16
+    model = VGG16(Args())
+    model.load_state_dict(torch.load(model_path))
+    model = model.to("cuda")
+
+    fig, axes = plt.subplots(2, 5, figsize=(12, 6))
+
+    for idx in range(10):
+        pattern_path = "../data/pattern/{}.png".format(idx)
+        pattern_save_path = "../data/noisy_pattern/{}.png".format(idx)
+        if not os.path.exists(os.path.dirname(pattern_save_path)):
+            os.makedirs(os.path.dirname(pattern_save_path))
+        pattern = Image.open(pattern_path).convert("RGB").resize((32, 32), Image.BILINEAR)
+        arr = np.array(pattern).astype(np.float32)
+        arr = (arr + np.random.randint(0, 255, arr.shape)).astype(np.float32) / 255 / 2
+        Image.fromarray((arr * 255).astype(np.uint8)).save(pattern_save_path)
+
+        # show the pattern
+        axes[idx//5][idx%5].imshow(Image.fromarray((arr * 255).astype(np.uint8)))
+        axes[idx//5][idx%5].axis("off")
+        axes[idx//5][idx%5].set_title(f"Pattern {idx}")
+
+        trigger_set_mean = [0.7141363, 0.72196555, 0.7009312 ]
+        trigger_set_std = [0.1813506, 0.16413535, 0.18837212]
+
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(trigger_set_mean, trigger_set_std)
+        ])
+        pattern_tensor = transform(arr).unsqueeze(0).to("cuda")
+        label = torch.tensor([idx]).to("cuda")
+        with torch.no_grad():
+            model.eval()
+            output = model(pattern_tensor)
+            print(output)
+            pred = torch.argmax(output, dim=1)
+            print("Predicted label: ", pred.item())
+            print("True label: ", label.item())
+            if pred.item() == label.item():
+                print("Correct prediction!")
+            else:
+                print("Incorrect prediction!")
+
+    plt.show()
 
 def test_verify_watermark():
-    path = "../result/VGG16/"
-    model_path = os.path.join(path, "model_last_epochs_25.pth")
+    path = "../result/VGG16-fast/"
+    model_path = os.path.join(path, "model_last_epochs_75.pth")
     from utils.models import VGG16
     model = VGG16(Args())
     model.load_state_dict(torch.load(model_path))
